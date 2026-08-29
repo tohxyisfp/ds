@@ -52,15 +52,15 @@ st.caption(
 def load_models():
 
     lr_model = joblib.load(
-        "models/linear_regression_model.pkl"
+        "models/linear_regression_pipeline.pkl"
     )
 
     dt_model = joblib.load(
-        "models/decision_tree_model.pkl"
+        "models/decision_tree_pipeline.pkl"
     )
 
     gb_model = joblib.load(
-        "models/gradient_boosting_model.pkl"
+        "models/gradient_boosting_pipeline.pkl"
     )
 
     return lr_model, dt_model, gb_model
