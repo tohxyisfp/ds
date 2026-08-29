@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+*.log
+.streamlit/secrets.toml
+.venv/
+venv/
+gold_engineered_full.csv
+model_metrics*.csv
+modelling_section_summary.csv
+figures_modelling/
