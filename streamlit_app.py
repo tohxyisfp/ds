@@ -592,6 +592,43 @@ def render_update_flash(text):
     )
 
 
+def date_input_with_year_jump(label, min_value, max_value, key, **kwargs):
+    """Drop-in replacement for st.date_input that adds a reliable 'Jump to
+    year' selectbox alongside the normal calendar.
+
+    Streamlit's built-in calendar reveals other years via a small internal
+    scrolling dropdown. On this app that dropdown silently breaks — it only
+    ever shows a handful of years near the widget's initial view and can't
+    be scrolled further, even though min_value/max_value are correct (most
+    likely because our global `html {font-size: 20px}` override throws off
+    that component's internal virtualized-list sizing). Rather than fight
+    that, this jumps the underlying date directly via session_state and lets
+    the calendar re-render already on the right year — the day/month picker
+    itself works fine, only the year list was affected.
+    """
+    current_val = st.session_state.get(key, max_value)
+    if not isinstance(current_val, datetime.date):
+        current_val = max_value
+
+    years = list(range(min_value.year, max_value.year + 1))
+    default_idx = years.index(current_val.year) if current_val.year in years else len(years) - 1
+
+    picked_year = st.selectbox(
+        f"{label} — jump to year", years, index=default_idx, key=f"{key}__year_jump",
+    )
+
+    if picked_year != current_val.year:
+        try:
+            jumped = current_val.replace(year=picked_year)
+        except ValueError:
+            jumped = current_val.replace(year=picked_year, day=28)  # Feb 29 safety
+        jumped = min(max(jumped, min_value), max_value)
+        st.session_state[key] = jumped
+        st.rerun()
+
+    return st.date_input(label, min_value=min_value, max_value=max_value, key=key, **kwargs)
+
+
 def build_ticker(data):
     latest = data.iloc[-1]
     earliest = data.iloc[0]
@@ -709,12 +746,12 @@ with tab1:
 
     col1, col2 = st.columns(2)
     with col1:
-        start_date = st.date_input(
+        start_date = date_input_with_year_jump(
             "Start Date",
             min_value=min_date, max_value=max_date, key="start_date_input",
         )
     with col2:
-        end_date = st.date_input(
+        end_date = date_input_with_year_jump(
             "End Date",
             min_value=min_date, max_value=max_date, key="end_date_input",
         )
@@ -847,11 +884,11 @@ with tab1:
 
                 tdc1, tdc2 = st.columns(2)
                 with tdc1:
-                    td_start = st.date_input(
+                    td_start = date_input_with_year_jump(
                         "From", min_value=td_min, max_value=td_max, key=key_range_start,
                     )
                 with tdc2:
-                    td_end = st.date_input(
+                    td_end = date_input_with_year_jump(
                         "To", min_value=td_min, max_value=td_max, key=key_range_end,
                     )
 
@@ -865,7 +902,7 @@ with tab1:
             elif pick_mode == "Single Date":
                 key_single = f"td_single_date_{td_bounds}"
                 _clamp_date_state(key_single, td_min, td_max, td_max)
-                td_single = st.date_input(
+                td_single = date_input_with_year_jump(
                     "Pick a date", min_value=td_min, max_value=td_max,
                     key=key_single,
                 )
@@ -888,12 +925,12 @@ with tab1:
                 st.caption("Narrow the list below first, so you don't have to scroll through years of dates.")
                 tfc1, tfc2 = st.columns(2)
                 with tfc1:
-                    filter_start = st.date_input(
+                    filter_start = date_input_with_year_jump(
                         "Narrow options from", min_value=td_min, max_value=td_max,
                         key=key_multi_start,
                     )
                 with tfc2:
-                    filter_end = st.date_input(
+                    filter_end = date_input_with_year_jump(
                         "Narrow options to", min_value=td_min, max_value=td_max,
                         key=key_multi_end,
                     )
@@ -953,7 +990,7 @@ with tab2:
     with col_date:
         min_valid, max_valid = available_dates[-1], available_dates[0]
         valid_dates_set = set(available_dates)
-        picked_date = st.date_input(
+        picked_date = date_input_with_year_jump(
             "Select Date (full trading history)",
             value=max_valid, min_value=min_valid, max_value=max_valid,
             key="predict_date_input",
@@ -1151,7 +1188,7 @@ with tab3:
     bt_min, bt_max = backtest_dates[-1], backtest_dates[0]
     backtest_dates_set = set(backtest_dates)
 
-    picked_compare_date = st.date_input(
+    picked_compare_date = date_input_with_year_jump(
         "Select a date to backtest",
         value=bt_max, min_value=bt_min, max_value=bt_max,
         key="compare_date_input",
