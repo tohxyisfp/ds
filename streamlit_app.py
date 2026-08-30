@@ -794,6 +794,14 @@ with tab1:
 
             date_options = range_df["Date"].dt.date.tolist()
             td_min, td_max = min(date_options), max(date_options)
+            # Suffix baked into every sub-widget key below so that whenever the
+            # outer Start/End Date range changes, these widgets get a brand-new
+            # key and Streamlit fully remounts them. Without this, the baseweb
+            # date-picker calendar keeps the min/max (and year dropdown range)
+            # it saw the first time it was rendered, even though new min_value/
+            # max_value are passed on rerun — so newly-available years (e.g.
+            # 2025) silently fail to appear no matter how far you scroll.
+            td_bounds = f"{td_min}_{td_max}"
 
             def _clamp_date_state(key, lo, hi, fallback):
                 """If a stale session_state date falls outside the current [lo, hi]
@@ -819,8 +827,10 @@ with tab1:
             show_df = None
 
             if pick_mode == "Date Range":
-                _clamp_date_state("td_range_start", td_min, td_max, td_min)
-                _clamp_date_state("td_range_end", td_min, td_max, td_max)
+                key_range_start = f"td_range_start_{td_bounds}"
+                key_range_end = f"td_range_end_{td_bounds}"
+                _clamp_date_state(key_range_start, td_min, td_max, td_min)
+                _clamp_date_state(key_range_end, td_min, td_max, td_max)
 
                 st.write("Quick pick:")
                 qd_cols = st.columns(5)
@@ -829,8 +839,8 @@ with tab1:
                 }
                 for qcol, (qlabel, qdays) in zip(qd_cols, quick_pick_ranges.items()):
                     if qcol.button(qlabel, use_container_width=True, key=f"quickpick_{qlabel}"):
-                        st.session_state["td_range_end"] = td_max
-                        st.session_state["td_range_start"] = td_min if qdays is None else max(
+                        st.session_state[key_range_end] = td_max
+                        st.session_state[key_range_start] = td_min if qdays is None else max(
                             td_min, td_max - datetime.timedelta(days=qdays)
                         )
                         st.rerun()
@@ -838,11 +848,11 @@ with tab1:
                 tdc1, tdc2 = st.columns(2)
                 with tdc1:
                     td_start = st.date_input(
-                        "From", min_value=td_min, max_value=td_max, key="td_range_start",
+                        "From", min_value=td_min, max_value=td_max, key=key_range_start,
                     )
                 with tdc2:
                     td_end = st.date_input(
-                        "To", min_value=td_min, max_value=td_max, key="td_range_end",
+                        "To", min_value=td_min, max_value=td_max, key=key_range_end,
                     )
 
                 if td_start > td_end:
@@ -853,10 +863,11 @@ with tab1:
                     ]
 
             elif pick_mode == "Single Date":
-                _clamp_date_state("td_single_date", td_min, td_max, td_max)
+                key_single = f"td_single_date_{td_bounds}"
+                _clamp_date_state(key_single, td_min, td_max, td_max)
                 td_single = st.date_input(
                     "Pick a date", min_value=td_min, max_value=td_max,
-                    key="td_single_date",
+                    key=key_single,
                 )
                 show_df = range_df[range_df["Date"].dt.date == td_single]
                 if show_df.empty:
@@ -866,23 +877,25 @@ with tab1:
                 if "trading_data_multiselect" not in st.session_state:
                     st.session_state["trading_data_multiselect"] = []
 
+                key_multi_start = f"td_multi_filter_start_{td_bounds}"
+                key_multi_end = f"td_multi_filter_end_{td_bounds}"
                 _clamp_date_state(
-                    "td_multi_filter_start", td_min, td_max,
+                    key_multi_start, td_min, td_max,
                     max(td_min, td_max - datetime.timedelta(days=365)),
                 )
-                _clamp_date_state("td_multi_filter_end", td_min, td_max, td_max)
+                _clamp_date_state(key_multi_end, td_min, td_max, td_max)
 
                 st.caption("Narrow the list below first, so you don't have to scroll through years of dates.")
                 tfc1, tfc2 = st.columns(2)
                 with tfc1:
                     filter_start = st.date_input(
                         "Narrow options from", min_value=td_min, max_value=td_max,
-                        key="td_multi_filter_start",
+                        key=key_multi_start,
                     )
                 with tfc2:
                     filter_end = st.date_input(
                         "Narrow options to", min_value=td_min, max_value=td_max,
-                        key="td_multi_filter_end",
+                        key=key_multi_end,
                     )
 
                 if filter_start > filter_end:
