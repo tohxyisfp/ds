@@ -15,7 +15,7 @@ import streamlit.components.v1 as components
 # =========================================================
 
 st.set_page_config(
-    page_title="Gold Predict",
+    page_title="Gold Price",
     page_icon="🪙",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -49,25 +49,38 @@ html, body, [class*="css"] {{
 
 /* ---- Global font size bump (the default Streamlit text was too small) ---- */
 html {{
-    font-size: 18px;
+    font-size: 20px;
 }}
-.stApp, .stMarkdown, .stMarkdown p, .stMarkdown li, .stText, p, li, span, label,
-div[data-testid="stCaptionContainer"], div[data-testid="stCaptionContainer"] p,
-.stButton>button, .stDownloadButton>button,
+
+[data-testid="stAppViewContainer"] p,
+[data-testid="stAppViewContainer"] li,
+[data-testid="stAppViewContainer"] span,
+[data-testid="stAppViewContainer"] label,
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li,
+[data-testid="stWidgetLabel"] p,
+[data-testid="stCaptionContainer"] p,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] li,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] span,
+.stMarkdown, .stMarkdown p, .stMarkdown li, .stText,
+.stButton>button, .stButton>button p, .stDownloadButton>button,
 .stSelectbox div, .stMultiSelect div, .stTextInput input, .stNumberInput input,
-.stDateInput input, .stRadio label, .stRadio div, .stTabs [data-baseweb="tab"] p,
-[data-testid="stMetricValue"], [data-testid="stMetricLabel"], [data-testid="stMetricDelta"],
+.stDateInput input, .stRadio label, .stRadio div,
+.stTabs [data-baseweb="tab"] p,
+[data-testid="stMetricLabel"], [data-testid="stMetricDelta"],
 .stDataFrame, .stDataFrame div, table, th, td {{
-    font-size: 1.05rem !important;
+    font-size: 1.15rem !important;
 }}
 [data-testid="stMetricValue"] {{
-    font-size: 1.9rem !important;
+    font-size: 2.2rem !important;
 }}
-h1 {{ font-size: 2.7rem !important; }}
-h2 {{ font-size: 2rem !important; }}
-h3 {{ font-size: 1.55rem !important; }}
+h1 {{ font-size: 3.2rem !important; }}
+h2 {{ font-size: 2.3rem !important; }}
+h3 {{ font-size: 1.8rem !important; }}
 .stCaption, div[data-testid="stCaptionContainer"] p {{
-    font-size: 0.95rem !important;
+    font-size: 1rem !important;
 }}
 
 .stApp {{
@@ -95,7 +108,7 @@ h1, h2, h3 {{
 .hero-title {{
     font-family: 'Fraunces', serif;
     font-weight: 700;
-    font-size: 2.4rem;
+    font-size: 3.6rem;
     background: linear-gradient(100deg, {PALETTE['gold_bright']}, {PALETTE['gold']} 55%, #a9791f);
     -webkit-background-clip: text;
     background-clip: text;
@@ -104,7 +117,7 @@ h1, h2, h3 {{
 }}
 .hero-sub {{
     color: {PALETTE['muted']};
-    font-size: 0.92rem;
+    font-size: 1.1rem;
     font-family: 'JetBrains Mono', monospace;
 }}
 
@@ -611,7 +624,7 @@ st.markdown(
     """
     <div class="hero-wrap">
         <div>
-            <p class="hero-title">🪙 S.Gold Predict</p>
+            <p class="hero-title">🪙 Gold Price</p>
             <p class="hero-sub">Next-Trading-Day Gold Price Forecasting · BMDS2003 Data Science Project</p>
         </div>
     </div>
@@ -1157,6 +1170,6 @@ with tab3:
 
 st.divider()
 st.caption(
-    "S.Gold Predict | BMDS2003 Data Science Project | "
+    "Gold Price | BMDS2003 Data Science Project | "
     "For academic demonstration purposes only — not financial advice."
 )
