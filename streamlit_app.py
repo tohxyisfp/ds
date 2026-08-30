@@ -165,15 +165,119 @@ h1, h2, h3 {{
 }}
 .result-headline {{
     font-family: 'Fraunces', serif;
-    font-size: 1.9rem;
+    font-size: 3rem;
     font-weight: 700;
     margin: 0;
 }}
 .result-caption {{
     color: {PALETTE['muted']};
     font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    margin-top: 0.4rem;
+}}
+
+/* ---- Actual price callout ---- */
+.actual-box {{
+    background: {PALETTE['panel']};
+    border: 1px solid {PALETTE['panel_border']};
+    border-left: 4px solid {PALETTE['gold']};
+    border-radius: 10px;
+    padding: 0.9rem 1.2rem;
+    margin: 0.8rem 0 1rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.92rem;
+    color: {PALETTE['ivory']};
+}}
+.actual-box b {{ color: {PALETTE['gold_bright']}; font-size: 1.05rem; }}
+
+/* ---- Big comparison table ---- */
+.big-table {{
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.08rem;
+    margin-top: 0.6rem;
+}}
+.big-table th {{
+    text-align: left;
+    padding: 0.85rem 1.1rem;
+    border-bottom: 2px solid {PALETTE['gold']};
+    color: {PALETTE['muted']};
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-family: 'Inter', sans-serif;
+}}
+.big-table td {{
+    padding: 0.85rem 1.1rem;
+    border-bottom: 1px solid {PALETTE['panel_border']};
+    color: {PALETTE['ivory']};
+}}
+.big-table tr.highlight-row td {{
+    background: rgba(184,134,11,0.16);
+    font-weight: 700;
+    color: {PALETTE['gold_bright']};
+}}
+.big-table tr.highlight-row {{
+    animation: rowGlow 1.1s ease-out;
+}}
+@keyframes rowGlow {{
+    0% {{ background: rgba(184,134,11,0.55); }}
+    100% {{ background: transparent; }}
+}}
+
+/* ---- Data-updated flash banner ---- */
+.update-flash {{
+    background: linear-gradient(90deg, rgba(184,134,11,0.22), rgba(184,134,11,0.04));
+    border: 1px solid {PALETTE['gold']};
+    border-radius: 8px;
+    padding: 0.55rem 1rem;
+    margin-bottom: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 0.85rem;
-    margin-top: 0.3rem;
+    color: {PALETTE['gold_bright']};
+    animation: flashPulse 1s ease-out;
+}}
+@keyframes flashPulse {{
+    0% {{ box-shadow: 0 0 0 0 rgba(184,134,11,0.55); transform: scale(0.985); }}
+    60% {{ box-shadow: 0 0 0 16px rgba(184,134,11,0); }}
+    100% {{ box-shadow: 0 0 0 0 rgba(184,134,11,0); transform: scale(1); }}
+}}
+
+/* ---- Full-screen predict effect overlay ---- */
+.fx-overlay {{
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    pointer-events: none;
+    z-index: 999999;
+    overflow: hidden;
+}}
+.fx-piece {{
+    position: absolute;
+    top: -60px;
+    animation-name: fxFall;
+    animation-timing-function: cubic-bezier(.25,.46,.45,.94);
+    animation-fill-mode: forwards;
+    filter: drop-shadow(0 0 8px rgba(255,215,0,0.85));
+}}
+@keyframes fxFall {{
+    0%   {{ transform: translate(0, 0) rotate(0deg); opacity: 1; }}
+    100% {{ transform: translate(var(--drift), 112vh) rotate(680deg); opacity: 0; }}
+}}
+.fx-flash {{
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    pointer-events: none;
+    z-index: 999998;
+    background: radial-gradient(circle at 50% 35%, rgba(255,215,0,0.35), rgba(255,215,0,0) 60%);
+    animation: fxFlashFade 1.1s ease-out forwards;
+}}
+@keyframes fxFlashFade {{
+    0% {{ opacity: 0; }}
+    25% {{ opacity: 1; }}
+    100% {{ opacity: 0; }}
 }}
 
 /* ---- Model badge pill ---- */
@@ -408,49 +512,40 @@ def stat_card(label, value, sub=""):
     )
 
 
-def render_coin_rain(n_coins=26, height=230):
-    coins_html = ""
-    for _ in range(n_coins):
-        left = random.uniform(2, 96)
-        delay = round(random.uniform(0, 1.0), 2)
-        duration = round(random.uniform(1.6, 2.6), 2)
-        size = random.randint(20, 34)
-        drift = random.randint(-40, 40)
-        coins_html += (
-            f'<div class="coin" style="left:{left}%; '
+def render_screen_effect(n_pieces=46, sparkly=True):
+    """Full-viewport golden burst (coins + sparkles) — injected directly into the
+    main page (not an iframe) so it can cover the entire screen with position:fixed."""
+    glyphs = ["🪙", "✨", "💰", "⭐"] if sparkly else ["🪙"]
+    pieces_html = ""
+    for _ in range(n_pieces):
+        left = random.uniform(1, 98)
+        delay = round(random.uniform(0, 0.6), 2)
+        duration = round(random.uniform(1.5, 2.8), 2)
+        size = random.randint(16, 34)
+        drift = random.randint(-60, 60)
+        glyph = random.choice(glyphs)
+        pieces_html += (
+            f'<div class="fx-piece" style="left:{left}%; '
             f'animation-delay:{delay}s; animation-duration:{duration}s; '
-            f'font-size:{size}px; --drift:{drift}px;">🪙</div>'
+            f'font-size:{size}px; --drift:{drift}px;">{glyph}</div>'
         )
 
-    html = f"""
-    <div class="coin-stage">
-      <style>
-        html, body {{ margin:0; padding:0; background: transparent; overflow:hidden; }}
-        .coin-stage {{
-            position: relative;
-            width: 100%;
-            height: {height}px;
-            overflow: hidden;
-            border-radius: 14px;
-            background: radial-gradient(circle at 50% 0%, rgba(184,134,11,0.10), rgba(184,134,11,0) 70%);
-        }}
-        .coin {{
-            position: absolute;
-            top: -40px;
-            animation-name: coinFall;
-            animation-timing-function: cubic-bezier(.25,.46,.45,.94);
-            animation-fill-mode: forwards;
-            filter: drop-shadow(0 0 6px rgba(255,215,0,0.75));
-        }}
-        @keyframes coinFall {{
-            0%   {{ transform: translate(0, 0) rotate(0deg); opacity: 1; }}
-            100% {{ transform: translate(var(--drift), {height + 60}px) rotate(680deg); opacity: 0; }}
-        }}
-      </style>
-      {coins_html}
-    </div>
-    """
-    components.html(html, height=height)
+    st.markdown(
+        f"""
+        <div class="fx-flash"></div>
+        <div class="fx-overlay">{pieces_html}</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_update_flash(text):
+    """Small self-contained banner that visibly pulses, so it's obvious when
+    switching a date has actually refreshed the data below it."""
+    st.markdown(
+        f"""<div class="update-flash">🔔 {text}</div>""",
+        unsafe_allow_html=True,
+    )
 
 
 def build_ticker(data):
@@ -616,12 +711,28 @@ with tab1:
                 rows=2, cols=1, shared_xaxes=True,
                 row_heights=[0.72, 0.28], vertical_spacing=0.03,
             )
+            # Shaded daily high/low band behind the close-price line, so we keep
+            # some of the range information a candlestick used to show.
             fig.add_trace(
-                go.Candlestick(
-                    x=range_df["Date"], open=range_df["Open"], high=range_df["High"],
-                    low=range_df["Low"], close=range_df["Price"], name="Price",
-                    increasing_line_color=PALETTE["up"], decreasing_line_color=PALETTE["down"],
-                    increasing_fillcolor=PALETTE["up"], decreasing_fillcolor=PALETTE["down"],
+                go.Scatter(
+                    x=range_df["Date"], y=range_df["High"], mode="lines",
+                    line=dict(width=0), showlegend=False, hoverinfo="skip",
+                ),
+                row=1, col=1,
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=range_df["Date"], y=range_df["Low"], mode="lines",
+                    line=dict(width=0), fill="tonexty",
+                    fillcolor="rgba(184,134,11,0.14)", name="Daily Range",
+                    showlegend=False, hoverinfo="skip",
+                ),
+                row=1, col=1,
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=range_df["Date"], y=range_df["Price"], mode="lines",
+                    name="Close Price", line=dict(color=PALETTE["gold_bright"], width=2.6),
                 ),
                 row=1, col=1,
             )
@@ -646,13 +757,32 @@ with tab1:
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
             st.subheader("Trading Data")
-            st.caption("Pick specific dates to inspect, instead of dumping the whole range.")
+            st.caption("Pick specific dates to inspect — nothing is pre-selected, choose your own or use a quick pick.")
 
             date_options = range_df["Date"].dt.date.tolist()
-            default_sel = date_options[-15:] if len(date_options) >= 15 else date_options
+
+            if "trading_data_multiselect" not in st.session_state:
+                st.session_state["trading_data_multiselect"] = []
+
+            st.write("Quick pick:")
+            qd_cols = st.columns(5)
+            quick_pick_ranges = {
+                "Last 7D": 7, "Last 1M": 30, "Last 3M": 90, "Last 1Y": 365, "All shown": None,
+            }
+            for qcol, (qlabel, qdays) in zip(qd_cols, quick_pick_ranges.items()):
+                if qcol.button(qlabel, use_container_width=True, key=f"quickpick_{qlabel}"):
+                    if qdays is None:
+                        sel = date_options
+                    else:
+                        cutoff = max(date_options) - datetime.timedelta(days=qdays)
+                        sel = [d for d in date_options if d >= cutoff]
+                    st.session_state["trading_data_multiselect"] = sorted(sel, reverse=True)
+                    st.rerun()
+
             picked_dates = st.multiselect(
-                "Select dates to display", options=sorted(date_options, reverse=True),
-                default=sorted(default_sel, reverse=True),
+                "Select dates to display",
+                options=sorted(date_options, reverse=True),
+                key="trading_data_multiselect",
             )
 
             if picked_dates:
@@ -687,12 +817,25 @@ with tab2:
         st.caption(f"Test-set performance — RMSE `{fmt_num(row['RMSE'],2)}` · MAE `{fmt_num(row['MAE'],2)}` · R² `{row['R²']:.4f}`")
 
     with col_date:
-        chosen_date = st.selectbox("Select Date (full trading history)", available_dates, index=0)
-        st.caption(f"Full valid range: {available_dates[-1]} → {available_dates[0]}")
+        min_valid, max_valid = available_dates[-1], available_dates[0]
+        valid_dates_set = set(available_dates)
+        picked_date = st.date_input(
+            "Select Date (full trading history)",
+            value=max_valid, min_value=min_valid, max_value=max_valid,
+            key="predict_date_input",
+        )
+        if picked_date in valid_dates_set:
+            chosen_date = picked_date
+        else:
+            earlier = [d for d in available_dates if d <= picked_date]
+            chosen_date = earlier[0] if earlier else min_valid
+            st.caption(f"⚠️ No trading data on {picked_date} — snapped to nearest trading day **{chosen_date}**.")
+        st.caption(f"Full valid range: {min_valid} → {max_valid}")
 
     selected_row = valid_df[valid_df["Date"].dt.date == chosen_date].iloc[0]
 
     st.subheader("Input Features")
+    render_update_flash(f"Inputs auto-filled from {chosen_date}")
     user_input = {}
 
     groups = {"Market": [], "Engineered": [], "Calendar": []}
@@ -713,7 +856,9 @@ with tab2:
                         value=float(selected_row[feature]),
                         step=step,
                         format=fmt,
-                        key=f"input_{feature}",
+                        # Key includes the chosen date so the widget remounts (and
+                        # actually refreshes its shown value) whenever the date changes.
+                        key=f"input_{feature}_{chosen_date}",
                     )
 
     with st.expander("💰 Market Data", expanded=True):
@@ -734,6 +879,10 @@ with tab2:
             price_change = predicted_price - previous_price
             percentage_change = (price_change / previous_price) * 100
 
+            # Full-screen golden/coin burst — plays for every prediction, right
+            # before the result is revealed.
+            render_screen_effect(sparkly=(price_change >= 0))
+
             st.divider()
             st.subheader("Prediction Result")
 
@@ -744,6 +893,7 @@ with tab2:
             else:
                 css_class, verdict, icon = "result-flat", "No significant change predicted", "➖"
 
+            # 1) Predicted result — shown first, bigger font, colour-coded.
             st.markdown(
                 f"""
                 <div class="result-card {css_class}">
@@ -757,9 +907,25 @@ with tab2:
                 unsafe_allow_html=True,
             )
 
-            if price_change > 0:
-                render_coin_rain()
+            if price_change < 0:
+                st.warning("⚠️ The model predicts a **decline** for the next trading day. Treat this forecast with extra caution.")
 
+            # 2) Actual price on record — shown afterwards, in its own callout
+            #    (kept separate from the predicted headline above).
+            actual_next = selected_row.get("Actual_NextClose", np.nan)
+            if pd.notna(actual_next):
+                err = predicted_price - actual_next
+                st.markdown(
+                    f"""
+                    <div class="actual-box">
+                        📚 Actual next-day close on record: <b>{fmt_num(actual_next, 2)}</b>
+                        &nbsp;·&nbsp; model error: {err:+,.2f}
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+            # 3) Then the three summary stat cards.
             c1, c2, c3 = st.columns(3)
             with c1:
                 stat_card("Predicted Next-Day Price", fmt_num(predicted_price, 2))
@@ -767,14 +933,6 @@ with tab2:
                 stat_card("Price Change", f"{price_change:+,.2f}")
             with c3:
                 stat_card("Percentage Change", f"{percentage_change:+.2f}%")
-
-            actual_next = selected_row.get("Actual_NextClose", np.nan)
-            if pd.notna(actual_next):
-                err = predicted_price - actual_next
-                st.caption(
-                    f"📚 Historical check — the *actual* next-day close on record was "
-                    f"**{fmt_num(actual_next, 2)}** (this model's error: {err:+,.2f})."
-                )
 
         except Exception as e:
             st.error("Prediction failed.")
@@ -848,8 +1006,22 @@ with tab3:
 
     backtest_df = df_features.dropna(subset=feature_cols + ["Actual_NextClose"]).copy()
     backtest_dates = sorted(backtest_df["Date"].dt.date.tolist(), reverse=True)
+    bt_min, bt_max = backtest_dates[-1], backtest_dates[0]
+    backtest_dates_set = set(backtest_dates)
 
-    compare_date = st.selectbox("Select a date to backtest", backtest_dates, index=0, key="compare_date")
+    picked_compare_date = st.date_input(
+        "Select a date to backtest",
+        value=bt_max, min_value=bt_min, max_value=bt_max,
+        key="compare_date_input",
+    )
+    if picked_compare_date in backtest_dates_set:
+        compare_date = picked_compare_date
+    else:
+        earlier = [d for d in backtest_dates if d <= picked_compare_date]
+        compare_date = earlier[0] if earlier else bt_min
+        st.caption(f"⚠️ No backtest data on {picked_compare_date} — snapped to nearest trading day **{compare_date}**.")
+
+    render_update_flash(f"Comparison refreshed for {compare_date}")
     compare_row = backtest_df[backtest_df["Date"].dt.date == compare_date].iloc[0]
     compare_input = pd.DataFrame([compare_row[feature_cols].to_dict()])[feature_cols]
 
@@ -883,14 +1055,35 @@ with tab3:
     fig2.update_yaxes(gridcolor=PALETTE["grid"])
     st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
 
-    err_table = pd.DataFrame({
-        "Model": names,
-        "Predicted": [fmt_num(v, 2) for v in values],
-        "Actual": fmt_num(actual_val, 2),
-        "Error": [f"{v - actual_val:+,.2f}" for v in values],
-        "Abs % Error": [f"{abs((v - actual_val) / actual_val) * 100:.2f}%" for v in values],
-    })
-    st.dataframe(err_table, use_container_width=True, hide_index=True)
+    abs_pct_errors = [abs((v - actual_val) / actual_val) * 100 for v in values]
+    best_row_idx = int(np.argmin(abs_pct_errors))
+
+    rows_html = ""
+    for i, name in enumerate(names):
+        err = values[i] - actual_val
+        highlight_cls = "highlight-row" if i == best_row_idx else ""
+        trophy = " 🏆" if i == best_row_idx else ""
+        rows_html += f"""
+        <tr class="{highlight_cls}">
+            <td>{name}{trophy}</td>
+            <td>{fmt_num(values[i], 2)}</td>
+            <td>{fmt_num(actual_val, 2)}</td>
+            <td>{err:+,.2f}</td>
+            <td>{abs_pct_errors[i]:.2f}%</td>
+        </tr>
+        """
+
+    st.markdown(
+        f"""
+        <table class="big-table">
+            <thead>
+                <tr><th>Model</th><th>Predicted</th><th>Actual</th><th>Error</th><th>Abs % Error</th></tr>
+            </thead>
+            <tbody>{rows_html}</tbody>
+        </table>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 # =========================================================
