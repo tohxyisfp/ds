@@ -795,6 +795,20 @@ with tab1:
             date_options = range_df["Date"].dt.date.tolist()
             td_min, td_max = min(date_options), max(date_options)
 
+            def _clamp_date_state(key, lo, hi, fallback):
+                """If a stale session_state date falls outside the current [lo, hi]
+                bounds (e.g. because the outer date filter was narrowed after this
+                key was first set), clamp it back in range before the date_input
+                widget is rendered. Prevents StreamlitAPIException."""
+                if key in st.session_state:
+                    val = st.session_state[key]
+                    if val < lo:
+                        st.session_state[key] = lo
+                    elif val > hi:
+                        st.session_state[key] = hi
+                else:
+                    st.session_state[key] = fallback
+
             pick_mode = st.radio(
                 "How do you want to pick dates?",
                 ["Date Range", "Single Date", "Multiple Dates"],
@@ -805,10 +819,8 @@ with tab1:
             show_df = None
 
             if pick_mode == "Date Range":
-                if "td_range_start" not in st.session_state:
-                    st.session_state["td_range_start"] = td_min
-                if "td_range_end" not in st.session_state:
-                    st.session_state["td_range_end"] = td_max
+                _clamp_date_state("td_range_start", td_min, td_max, td_min)
+                _clamp_date_state("td_range_end", td_min, td_max, td_max)
 
                 st.write("Quick pick:")
                 qd_cols = st.columns(5)
@@ -841,8 +853,9 @@ with tab1:
                     ]
 
             elif pick_mode == "Single Date":
+                _clamp_date_state("td_single_date", td_min, td_max, td_max)
                 td_single = st.date_input(
-                    "Pick a date", min_value=td_min, max_value=td_max, value=td_max,
+                    "Pick a date", min_value=td_min, max_value=td_max,
                     key="td_single_date",
                 )
                 show_df = range_df[range_df["Date"].dt.date == td_single]
@@ -852,10 +865,12 @@ with tab1:
             else:  # Multiple Dates — arbitrary, non-contiguous
                 if "trading_data_multiselect" not in st.session_state:
                     st.session_state["trading_data_multiselect"] = []
-                if "td_multi_filter_start" not in st.session_state:
-                    st.session_state["td_multi_filter_start"] = max(td_min, td_max - datetime.timedelta(days=365))
-                if "td_multi_filter_end" not in st.session_state:
-                    st.session_state["td_multi_filter_end"] = td_max
+
+                _clamp_date_state(
+                    "td_multi_filter_start", td_min, td_max,
+                    max(td_min, td_max - datetime.timedelta(days=365)),
+                )
+                _clamp_date_state("td_multi_filter_end", td_min, td_max, td_max)
 
                 st.caption("Narrow the list below first, so you don't have to scroll through years of dates.")
                 tfc1, tfc2 = st.columns(2)
