@@ -997,8 +997,7 @@ with tab2:
         try:
             predicted_price = float(model.predict(input_df)[0])
             previous_price = float(selected_row["Price"])
-            price_change = predicted_price - previous_price
-            percentage_change = (price_change / previous_price) * 100
+            price_change = predicted_price - previous_price  # used only to pick 📈/📉 direction
 
             # Full-screen golden/coin burst — plays for every prediction, right
             # before the result is revealed.
@@ -1015,11 +1014,14 @@ with tab2:
                 css_class, verdict, icon = "result-flat", "no significant change", "➖"
 
             # 1) Predicted next-day price — headline, colour-coded by direction.
+            #    No numeric delta shown here to avoid confusion with the
+            #    predicted-vs-actual comparison below — that's the one number
+            #    that matters for judging accuracy.
             st.markdown(
                 f"""
                 <div class="result-card {css_class}">
                     <p class="result-headline">{icon} Next day price: {fmt_num(predicted_price, 2)}</p>
-                    <p class="result-verdict">Predicted {verdict} · {price_change:+,.2f} ({percentage_change:+.2f}%)</p>
+                    <p class="result-verdict">Predicted {verdict} from today's price ({fmt_num(previous_price, 2)})</p>
                     <p class="result-caption">
                         <span class="badge">{model_choice}</span>
                     </p>
@@ -1033,10 +1035,12 @@ with tab2:
 
             # 2) Compare directly against the actual next-day price, when it's
             #    known (i.e. the chosen date isn't the very last day on record).
+            #    This is the single, authoritative accuracy comparison shown.
             actual_next = selected_row.get("Actual_NextClose", np.nan)
-            if pd.notna(actual_next):
-                err = predicted_price - actual_next
-                err_pct = (err / actual_next) * 100
+            has_actual = pd.notna(actual_next)
+            if has_actual:
+                err = predicted_price - float(actual_next)
+                err_pct = (err / float(actual_next)) * 100
                 st.markdown(
                     f"""
                     <div class="actual-box">
@@ -1049,14 +1053,15 @@ with tab2:
             else:
                 st.caption("ℹ️ This is the most recent date on record, so there's no actual next-day price to compare against yet.")
 
-            # 3) Then the three summary stat cards.
+            # 3) Summary stat cards — all built around the same predicted-vs-actual
+            #    comparison, so there's only ever one pair of numbers on screen.
             c1, c2, c3 = st.columns(3)
             with c1:
                 stat_card("Predicted Next-Day Price", fmt_num(predicted_price, 2))
             with c2:
-                stat_card("Price Change", f"{price_change:+,.2f}")
+                stat_card("Actual Next-Day Price", fmt_num(actual_next, 2) if has_actual else "Not available yet")
             with c3:
-                stat_card("Percentage Change", f"{percentage_change:+.2f}%")
+                stat_card("Predicted vs Actual", f"{err:+,.2f} ({err_pct:+.2f}%)" if has_actual else "—")
 
         except Exception as e:
             st.error("Prediction failed.")
