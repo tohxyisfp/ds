@@ -15,7 +15,7 @@ import streamlit.components.v1 as components
 # =========================================================
 
 st.set_page_config(
-    page_title="S.Gold Predict",
+    page_title="Gold Predict",
     page_icon="🪙",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -45,6 +45,29 @@ CSS = f"""
 
 html, body, [class*="css"] {{
     font-family: 'Inter', sans-serif;
+}}
+
+/* ---- Global font size bump (the default Streamlit text was too small) ---- */
+html {{
+    font-size: 18px;
+}}
+.stApp, .stMarkdown, .stMarkdown p, .stMarkdown li, .stText, p, li, span, label,
+div[data-testid="stCaptionContainer"], div[data-testid="stCaptionContainer"] p,
+.stButton>button, .stDownloadButton>button,
+.stSelectbox div, .stMultiSelect div, .stTextInput input, .stNumberInput input,
+.stDateInput input, .stRadio label, .stRadio div, .stTabs [data-baseweb="tab"] p,
+[data-testid="stMetricValue"], [data-testid="stMetricLabel"], [data-testid="stMetricDelta"],
+.stDataFrame, .stDataFrame div, table, th, td {{
+    font-size: 1.05rem !important;
+}}
+[data-testid="stMetricValue"] {{
+    font-size: 1.9rem !important;
+}}
+h1 {{ font-size: 2.7rem !important; }}
+h2 {{ font-size: 2rem !important; }}
+h3 {{ font-size: 1.55rem !important; }}
+.stCaption, div[data-testid="stCaptionContainer"] p {{
+    font-size: 0.95rem !important;
 }}
 
 .stApp {{
@@ -146,34 +169,42 @@ h1, h2, h3 {{
 
 /* ---- Result card ---- */
 .result-card {{
-    border-radius: 16px;
-    padding: 1.6rem 1.8rem;
-    margin-top: 0.6rem;
-    border: 1px solid;
+    border-radius: 20px;
+    padding: 2.4rem 2.6rem;
+    margin-top: 0.8rem;
+    border: 2px solid;
 }}
 .result-up {{
-    background: linear-gradient(135deg, rgba(31,157,90,0.14), rgba(31,157,90,0.03));
-    border-color: rgba(31,157,90,0.45);
+    background: linear-gradient(135deg, rgba(31,157,90,0.16), rgba(31,157,90,0.03));
+    border-color: rgba(31,157,90,0.5);
 }}
 .result-down {{
-    background: linear-gradient(135deg, rgba(193,68,46,0.14), rgba(193,68,46,0.03));
-    border-color: rgba(193,68,46,0.45);
+    background: linear-gradient(135deg, rgba(193,68,46,0.16), rgba(193,68,46,0.03));
+    border-color: rgba(193,68,46,0.5);
 }}
 .result-flat {{
-    background: linear-gradient(135deg, rgba(184,134,11,0.14), rgba(184,134,11,0.03));
-    border-color: rgba(184,134,11,0.45);
+    background: linear-gradient(135deg, rgba(184,134,11,0.16), rgba(184,134,11,0.03));
+    border-color: rgba(184,134,11,0.5);
 }}
 .result-headline {{
     font-family: 'Fraunces', serif;
-    font-size: 3rem;
+    font-size: 4.2rem;
     font-weight: 700;
     margin: 0;
+    line-height: 1.1;
+}}
+.result-verdict {{
+    color: {PALETTE['ivory']};
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-top: 0.7rem;
 }}
 .result-caption {{
     color: {PALETTE['muted']};
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.95rem;
-    margin-top: 0.4rem;
+    font-size: 1.05rem;
+    margin-top: 0.5rem;
 }}
 
 /* ---- Actual price callout ---- */
@@ -550,22 +581,17 @@ def render_update_flash(text):
 
 def build_ticker(data):
     latest = data.iloc[-1]
-    prev = data.iloc[-2]
-    change = latest["Price"] - prev["Price"]
-    pct = (change / prev["Price"]) * 100
+    earliest = data.iloc[0]
     hi_all = data["Price"].max()
     lo_all = data["Price"].min()
-    cls = "ticker-up" if change >= 0 else "ticker-down"
-    arrow = "▲" if change >= 0 else "▼"
 
     items = [
         f'Latest Close <b>{fmt_num(latest["Price"], 2)}</b>',
-        f'<span class="{cls}">{arrow} {fmt_num(change, 2)} ({pct:+.2f}%)</span>',
-        f'Volume <b>{fmt_num(latest["Volume"], 0)}</b>',
         f'All-Time High <b>{fmt_num(hi_all, 2)}</b>',
         f'All-Time Low <b>{fmt_num(lo_all, 2)}</b>',
         f'Records <b>{len(data):,}</b>',
-        f'As of <b>{latest["Date"].date()}</b>',
+        f'Start Date <b>{earliest["Date"].date()}</b>',
+        f'End Date <b>{latest["Date"].date()}</b>',
     ]
     track = "".join(f'<span class="ticker-item">{i}</span>' for i in items)
     # duplicate for a seamless scroll loop
@@ -611,6 +637,10 @@ with st.sidebar:
     st.metric("Latest Volume", fmt_num(latest_row["Volume"], 0))
     st.caption(f"Dataset span: **{df['Date'].min().date()} → {df['Date'].max().date()}**")
     st.caption(f"Total trading records: **{len(df):,}**")
+    st.caption(
+        "ℹ️ Model training drops 2 of these rows: the first (no prior-day lag "
+        "history yet) and the last (no next-day close to use as the target)."
+    )
     st.divider()
     st.markdown("### 🏆 Best Model")
     best_row = model_comparison.sort_values("RMSE").iloc[0]
@@ -642,10 +672,10 @@ with tab1:
     min_date = df["Date"].min().date()
     max_date = df["Date"].max().date()
 
-    if "range_start" not in st.session_state:
-        st.session_state["range_start"] = max(min_date, max_date - datetime.timedelta(days=365))
-    if "range_end" not in st.session_state:
-        st.session_state["range_end"] = max_date
+    if "start_date_input" not in st.session_state:
+        st.session_state["start_date_input"] = max(min_date, max_date - datetime.timedelta(days=365))
+    if "end_date_input" not in st.session_state:
+        st.session_state["end_date_input"] = max_date
 
     st.write("Quick range:")
     qcols = st.columns(8)
@@ -654,9 +684,12 @@ with tab1:
         "1Y": 365, "2Y": 730, "5Y": 1825, "MAX": None,
     }
     for col, (label, days) in zip(qcols, quick_ranges.items()):
-        if col.button(label, use_container_width=True):
-            st.session_state["range_end"] = max_date
-            st.session_state["range_start"] = min_date if days is None else max(
+        if col.button(label, use_container_width=True, key=f"qr_{label}"):
+            # Write straight into the date_input widgets' own session_state keys
+            # (below) so the calendar fields actually jump to match — writing to
+            # a *different* key here left the widgets showing stale dates.
+            st.session_state["end_date_input"] = max_date
+            st.session_state["start_date_input"] = min_date if days is None else max(
                 min_date, max_date - datetime.timedelta(days=days)
             )
             st.rerun()
@@ -664,12 +697,12 @@ with tab1:
     col1, col2 = st.columns(2)
     with col1:
         start_date = st.date_input(
-            "Start Date", value=st.session_state["range_start"],
+            "Start Date",
             min_value=min_date, max_value=max_date, key="start_date_input",
         )
     with col2:
         end_date = st.date_input(
-            "End Date", value=st.session_state["range_end"],
+            "End Date",
             min_value=min_date, max_value=max_date, key="end_date_input",
         )
 
@@ -707,18 +740,14 @@ with tab1:
 
             st.write("")
 
-            fig = make_subplots(
-                rows=2, cols=1, shared_xaxes=True,
-                row_heights=[0.72, 0.28], vertical_spacing=0.03,
-            )
+            fig = go.Figure()
             # Shaded daily high/low band behind the close-price line, so we keep
             # some of the range information a candlestick used to show.
             fig.add_trace(
                 go.Scatter(
                     x=range_df["Date"], y=range_df["High"], mode="lines",
                     line=dict(width=0), showlegend=False, hoverinfo="skip",
-                ),
-                row=1, col=1,
+                )
             )
             fig.add_trace(
                 go.Scatter(
@@ -726,28 +755,19 @@ with tab1:
                     line=dict(width=0), fill="tonexty",
                     fillcolor="rgba(184,134,11,0.14)", name="Daily Range",
                     showlegend=False, hoverinfo="skip",
-                ),
-                row=1, col=1,
+                )
             )
             fig.add_trace(
                 go.Scatter(
                     x=range_df["Date"], y=range_df["Price"], mode="lines",
                     name="Close Price", line=dict(color=PALETTE["gold_bright"], width=2.6),
-                ),
-                row=1, col=1,
-            )
-            vol_colors = np.where(range_df["Price"].diff().fillna(0) >= 0, PALETTE["up"], PALETTE["down"])
-            fig.add_trace(
-                go.Bar(x=range_df["Date"], y=range_df["Volume"], name="Volume",
-                       marker_color=vol_colors, opacity=0.65),
-                row=2, col=1,
+                )
             )
             fig.update_layout(
-                height=560,
+                height=480,
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
                 font=dict(color=PALETTE["ivory"], family="Inter, sans-serif"),
-                xaxis_rangeslider_visible=False,
                 showlegend=False,
                 margin=dict(l=10, r=10, t=10, b=10),
                 hovermode="x unified",
@@ -757,41 +777,84 @@ with tab1:
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
             st.subheader("Trading Data")
-            st.caption("Pick specific dates to inspect — nothing is pre-selected, choose your own or use a quick pick.")
+            st.caption("Inspect specific trading records — pick a date range, a single date, or several individual dates.")
 
             date_options = range_df["Date"].dt.date.tolist()
+            td_min, td_max = min(date_options), max(date_options)
 
-            if "trading_data_multiselect" not in st.session_state:
-                st.session_state["trading_data_multiselect"] = []
-
-            st.write("Quick pick:")
-            qd_cols = st.columns(5)
-            quick_pick_ranges = {
-                "Last 7D": 7, "Last 1M": 30, "Last 3M": 90, "Last 1Y": 365, "All shown": None,
-            }
-            for qcol, (qlabel, qdays) in zip(qd_cols, quick_pick_ranges.items()):
-                if qcol.button(qlabel, use_container_width=True, key=f"quickpick_{qlabel}"):
-                    if qdays is None:
-                        sel = date_options
-                    else:
-                        cutoff = max(date_options) - datetime.timedelta(days=qdays)
-                        sel = [d for d in date_options if d >= cutoff]
-                    st.session_state["trading_data_multiselect"] = sorted(sel, reverse=True)
-                    st.rerun()
-
-            picked_dates = st.multiselect(
-                "Select dates to display",
-                options=sorted(date_options, reverse=True),
-                key="trading_data_multiselect",
+            pick_mode = st.radio(
+                "How do you want to pick dates?",
+                ["Date Range", "Single Date", "Multiple Dates"],
+                horizontal=True,
+                key="trading_data_mode",
             )
 
-            if picked_dates:
-                show_df = range_df[range_df["Date"].dt.date.isin(picked_dates)][
-                    ["Date", "Open", "High", "Low", "Price", "Volume", "Chg%"]
-                ].sort_values("Date", ascending=False)
-                st.dataframe(show_df, use_container_width=True, hide_index=True)
-            else:
-                st.info("Select at least one date above to see its trading data.")
+            show_df = None
+
+            if pick_mode == "Date Range":
+                if "td_range_start" not in st.session_state:
+                    st.session_state["td_range_start"] = td_min
+                if "td_range_end" not in st.session_state:
+                    st.session_state["td_range_end"] = td_max
+
+                st.write("Quick pick:")
+                qd_cols = st.columns(5)
+                quick_pick_ranges = {
+                    "Last 7D": 7, "Last 1M": 30, "Last 3M": 90, "Last 1Y": 365, "All shown": None,
+                }
+                for qcol, (qlabel, qdays) in zip(qd_cols, quick_pick_ranges.items()):
+                    if qcol.button(qlabel, use_container_width=True, key=f"quickpick_{qlabel}"):
+                        st.session_state["td_range_end"] = td_max
+                        st.session_state["td_range_start"] = td_min if qdays is None else max(
+                            td_min, td_max - datetime.timedelta(days=qdays)
+                        )
+                        st.rerun()
+
+                tdc1, tdc2 = st.columns(2)
+                with tdc1:
+                    td_start = st.date_input(
+                        "From", min_value=td_min, max_value=td_max, key="td_range_start",
+                    )
+                with tdc2:
+                    td_end = st.date_input(
+                        "To", min_value=td_min, max_value=td_max, key="td_range_end",
+                    )
+
+                if td_start > td_end:
+                    st.warning("From date must be earlier than To date.")
+                else:
+                    show_df = range_df[
+                        (range_df["Date"].dt.date >= td_start) & (range_df["Date"].dt.date <= td_end)
+                    ]
+
+            elif pick_mode == "Single Date":
+                td_single = st.date_input(
+                    "Pick a date", min_value=td_min, max_value=td_max, value=td_max,
+                    key="td_single_date",
+                )
+                show_df = range_df[range_df["Date"].dt.date == td_single]
+                if show_df.empty:
+                    st.info(f"No trading record on {td_single} (likely a weekend/holiday).")
+
+            else:  # Multiple Dates — arbitrary, non-contiguous
+                if "trading_data_multiselect" not in st.session_state:
+                    st.session_state["trading_data_multiselect"] = []
+                picked_dates = st.multiselect(
+                    "Select specific dates to display",
+                    options=sorted(date_options, reverse=True),
+                    key="trading_data_multiselect",
+                )
+                if picked_dates:
+                    show_df = range_df[range_df["Date"].dt.date.isin(picked_dates)]
+                else:
+                    st.info("Select at least one date above to see its trading data.")
+
+            if show_df is not None and not show_df.empty:
+                st.dataframe(
+                    show_df[["Date", "Open", "High", "Low", "Price", "Volume", "Chg%"]]
+                    .sort_values("Date", ascending=False),
+                    use_container_width=True, hide_index=True,
+                )
 
 
 # =========================================================
@@ -893,13 +956,15 @@ with tab2:
             else:
                 css_class, verdict, icon = "result-flat", "No significant change predicted", "➖"
 
-            # 1) Predicted result — shown first, bigger font, colour-coded.
+            # 1) Predicted result — shown first, huge font, colour-coded, each
+            #    piece of info on its own line (not crammed into one row).
             st.markdown(
                 f"""
                 <div class="result-card {css_class}">
                     <p class="result-headline">{icon} {fmt_num(predicted_price, 2)}</p>
+                    <p class="result-verdict">{verdict} · {price_change:+,.2f} ({percentage_change:+.2f}%)</p>
                     <p class="result-caption">
-                        {verdict} · {price_change:+,.2f} ({percentage_change:+.2f}%) vs. {chosen_date} close of {fmt_num(previous_price,2)}
+                        Actual close price: {fmt_num(previous_price,2)} (on {chosen_date})
                         <span class="badge">{model_choice}</span>
                     </p>
                 </div>
@@ -1095,4 +1160,3 @@ st.caption(
     "S.Gold Predict | BMDS2003 Data Science Project | "
     "For academic demonstration purposes only — not financial advice."
 )
-
