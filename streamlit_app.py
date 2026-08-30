@@ -1,5 +1,7 @@
 import random
 import datetime
+import base64
+from pathlib import Path
 
 import streamlit as st
 import pandas as pd
@@ -97,13 +99,28 @@ h1, h2, h3 {{
 /* ---- Hero header ---- */
 .hero-wrap {{
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 0.5rem;
     border-bottom: 1px solid {PALETTE['panel_border']};
     padding-bottom: 1rem;
     margin-bottom: 0.4rem;
+}}
+.hero-left {{
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+}}
+.hero-icon {{
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #FFFFFF;
+    border: 2px solid {PALETTE['gold']};
+    box-shadow: 0 2px 10px rgba(184,134,11,0.35);
+    flex-shrink: 0;
 }}
 [data-testid="stMarkdownContainer"] p.hero-title {{
     font-family: 'Fraunces', serif;
@@ -384,6 +401,18 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 
 # =========================================================
+# HERO ICON (gold bar photo, base64-embedded so it works
+# without any external hosting)
+# =========================================================
+
+@st.cache_data
+def get_base64_image(path):
+    return base64.b64encode(Path(path).read_bytes()).decode()
+
+GOLD_ICON_B64 = get_base64_image("assets/gold_icon.png")
+
+
+# =========================================================
 # LOAD MODELS
 # =========================================================
 
@@ -621,11 +650,14 @@ def build_ticker(data):
 # =========================================================
 
 st.markdown(
-    """
+    f"""
     <div class="hero-wrap">
-        <div>
-            <p class="hero-title">🪙 Gold Price</p>
-            <p class="hero-sub">Next-Trading-Day Gold Price Forecasting · BMDS2003 Data Science Project</p>
+        <div class="hero-left">
+            <img class="hero-icon" src="data:image/png;base64,{GOLD_ICON_B64}" alt="Gold bars">
+            <div>
+                <p class="hero-title">Gold Price</p>
+                <p class="hero-sub">Next-Trading-Day Gold Price Forecasting · BMDS2003 Data Science Project</p>
+            </div>
         </div>
     </div>
     """,
