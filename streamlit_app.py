@@ -105,19 +105,19 @@ h1, h2, h3 {{
     padding-bottom: 1rem;
     margin-bottom: 0.4rem;
 }}
-.hero-title {{
+[data-testid="stMarkdownContainer"] p.hero-title {{
     font-family: 'Fraunces', serif;
     font-weight: 700;
-    font-size: 3.6rem;
+    font-size: 3.6rem !important;
     background: linear-gradient(100deg, {PALETTE['gold_bright']}, {PALETTE['gold']} 55%, #a9791f);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
     margin: 0;
 }}
-.hero-sub {{
+[data-testid="stMarkdownContainer"] p.hero-sub {{
     color: {PALETTE['muted']};
-    font-size: 1.1rem;
+    font-size: 1.1rem !important;
     font-family: 'JetBrains Mono', monospace;
 }}
 
@@ -199,24 +199,24 @@ h1, h2, h3 {{
     background: linear-gradient(135deg, rgba(184,134,11,0.16), rgba(184,134,11,0.03));
     border-color: rgba(184,134,11,0.5);
 }}
-.result-headline {{
+[data-testid="stMarkdownContainer"] p.result-headline {{
     font-family: 'Fraunces', serif;
-    font-size: 4.2rem;
+    font-size: 4.2rem !important;
     font-weight: 700;
     margin: 0;
     line-height: 1.1;
 }}
-.result-verdict {{
+[data-testid="stMarkdownContainer"] p.result-verdict {{
     color: {PALETTE['ivory']};
     font-family: 'JetBrains Mono', monospace;
-    font-size: 1.3rem;
+    font-size: 1.3rem !important;
     font-weight: 600;
     margin-top: 0.7rem;
 }}
-.result-caption {{
+[data-testid="stMarkdownContainer"] p.result-caption {{
     color: {PALETTE['muted']};
     font-family: 'JetBrains Mono', monospace;
-    font-size: 1.05rem;
+    font-size: 1.05rem !important;
     margin-top: 0.5rem;
 }}
 
@@ -852,9 +852,33 @@ with tab1:
             else:  # Multiple Dates — arbitrary, non-contiguous
                 if "trading_data_multiselect" not in st.session_state:
                     st.session_state["trading_data_multiselect"] = []
+                if "td_multi_filter_start" not in st.session_state:
+                    st.session_state["td_multi_filter_start"] = max(td_min, td_max - datetime.timedelta(days=365))
+                if "td_multi_filter_end" not in st.session_state:
+                    st.session_state["td_multi_filter_end"] = td_max
+
+                st.caption("Narrow the list below first, so you don't have to scroll through years of dates.")
+                tfc1, tfc2 = st.columns(2)
+                with tfc1:
+                    filter_start = st.date_input(
+                        "Narrow options from", min_value=td_min, max_value=td_max,
+                        key="td_multi_filter_start",
+                    )
+                with tfc2:
+                    filter_end = st.date_input(
+                        "Narrow options to", min_value=td_min, max_value=td_max,
+                        key="td_multi_filter_end",
+                    )
+
+                if filter_start > filter_end:
+                    st.warning("The 'from' date must be earlier than the 'to' date.")
+                    narrowed_options = date_options
+                else:
+                    narrowed_options = [d for d in date_options if filter_start <= d <= filter_end]
+
                 picked_dates = st.multiselect(
                     "Select specific dates to display",
-                    options=sorted(date_options, reverse=True),
+                    options=sorted(narrowed_options, reverse=True),
                     key="trading_data_multiselect",
                 )
                 if picked_dates:
@@ -862,10 +886,16 @@ with tab1:
                 else:
                     st.info("Select at least one date above to see its trading data.")
 
+            sort_order = st.radio(
+                "Sort order", ["Newest first", "Oldest first"],
+                horizontal=True, key="trading_data_sort",
+            )
+            sort_ascending = sort_order == "Oldest first"
+
             if show_df is not None and not show_df.empty:
                 st.dataframe(
                     show_df[["Date", "Open", "High", "Low", "Price", "Volume", "Chg%"]]
-                    .sort_values("Date", ascending=False),
+                    .sort_values("Date", ascending=sort_ascending),
                     use_container_width=True, hide_index=True,
                 )
 
