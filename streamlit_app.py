@@ -1008,21 +1008,19 @@ with tab2:
             st.subheader("Prediction Result")
 
             if price_change > 0:
-                css_class, verdict, icon = "result-up", "Predicted increase", "📈"
+                css_class, verdict, icon = "result-up", "increase", "📈"
             elif price_change < 0:
-                css_class, verdict, icon = "result-down", "Predicted decrease", "📉"
+                css_class, verdict, icon = "result-down", "decrease", "📉"
             else:
-                css_class, verdict, icon = "result-flat", "No significant change predicted", "➖"
+                css_class, verdict, icon = "result-flat", "no significant change", "➖"
 
-            # 1) Predicted result — shown first, huge font, colour-coded, each
-            #    piece of info on its own line (not crammed into one row).
+            # 1) Predicted next-day price — headline, colour-coded by direction.
             st.markdown(
                 f"""
                 <div class="result-card {css_class}">
-                    <p class="result-headline">{icon} {fmt_num(predicted_price, 2)}</p>
-                    <p class="result-verdict">{verdict} · {price_change:+,.2f} ({percentage_change:+.2f}%)</p>
+                    <p class="result-headline">{icon} Next day price: {fmt_num(predicted_price, 2)}</p>
+                    <p class="result-verdict">Predicted {verdict} · {price_change:+,.2f} ({percentage_change:+.2f}%)</p>
                     <p class="result-caption">
-                        Actual close price: {fmt_num(previous_price,2)} (on {chosen_date})
                         <span class="badge">{model_choice}</span>
                     </p>
                 </div>
@@ -1033,20 +1031,23 @@ with tab2:
             if price_change < 0:
                 st.warning("⚠️ The model predicts a **decline** for the next trading day. Treat this forecast with extra caution.")
 
-            # 2) Actual price on record — shown afterwards, in its own callout
-            #    (kept separate from the predicted headline above).
+            # 2) Compare directly against the actual next-day price, when it's
+            #    known (i.e. the chosen date isn't the very last day on record).
             actual_next = selected_row.get("Actual_NextClose", np.nan)
             if pd.notna(actual_next):
                 err = predicted_price - actual_next
+                err_pct = (err / actual_next) * 100
                 st.markdown(
                     f"""
                     <div class="actual-box">
-                        📚 Actual next-day close on record: <b>{fmt_num(actual_next, 2)}</b>
-                        &nbsp;·&nbsp; model error: {err:+,.2f}
+                        📚 Actual next-day price: <b>{fmt_num(actual_next, 2)}</b>
+                        &nbsp;·&nbsp; predicted vs actual: {err:+,.2f} ({err_pct:+.2f}%)
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
+            else:
+                st.caption("ℹ️ This is the most recent date on record, so there's no actual next-day price to compare against yet.")
 
             # 3) Then the three summary stat cards.
             c1, c2, c3 = st.columns(3)
