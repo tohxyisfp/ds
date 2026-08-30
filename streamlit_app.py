@@ -27,15 +27,16 @@ st.set_page_config(
 # =========================================================
 
 PALETTE = {
-    "bg": "#0A0E14",
-    "panel": "#12161F",
-    "panel_border": "#242B3A",
-    "gold": "#D4AF37",
-    "gold_bright": "#F2C879",
-    "ivory": "#EDEAE0",
-    "muted": "#8B8F9A",
-    "up": "#2ECC71",
-    "down": "#E4572E",
+    "bg": "#FAF7F0",
+    "panel": "#FFFFFF",
+    "panel_border": "#E4DAC0",
+    "gold": "#B8860B",
+    "gold_bright": "#9A6B0C",
+    "ivory": "#2B2620",
+    "muted": "#7A7266",
+    "up": "#1F9D5A",
+    "down": "#C1442E",
+    "grid": "#DED2AE",
 }
 
 CSS = f"""
@@ -47,7 +48,7 @@ html, body, [class*="css"] {{
 }}
 
 .stApp {{
-    background: radial-gradient(circle at 15% 0%, #141a26 0%, {PALETTE['bg']} 45%) fixed;
+    background: radial-gradient(circle at 15% 0%, #F1EADA 0%, {PALETTE['bg']} 45%) fixed;
 }}
 
 /* Headline typography */
@@ -116,11 +117,12 @@ h1, h2, h3 {{
 
 /* ---- Stat / metric cards ---- */
 .stat-card {{
-    background: linear-gradient(160deg, {PALETTE['panel']}, #0d1119);
+    background: linear-gradient(160deg, {PALETTE['panel']}, #F3ECDA);
     border: 1px solid {PALETTE['panel_border']};
     border-radius: 12px;
     padding: 0.9rem 1.1rem;
     height: 100%;
+    box-shadow: 0 2px 8px rgba(120,100,50,0.06);
 }}
 .stat-label {{
     color: {PALETTE['muted']};
@@ -150,16 +152,16 @@ h1, h2, h3 {{
     border: 1px solid;
 }}
 .result-up {{
-    background: linear-gradient(135deg, rgba(46,204,113,0.14), rgba(46,204,113,0.03));
-    border-color: rgba(46,204,113,0.45);
+    background: linear-gradient(135deg, rgba(31,157,90,0.14), rgba(31,157,90,0.03));
+    border-color: rgba(31,157,90,0.45);
 }}
 .result-down {{
-    background: linear-gradient(135deg, rgba(228,87,46,0.14), rgba(228,87,46,0.03));
-    border-color: rgba(228,87,46,0.45);
+    background: linear-gradient(135deg, rgba(193,68,46,0.14), rgba(193,68,46,0.03));
+    border-color: rgba(193,68,46,0.45);
 }}
 .result-flat {{
-    background: linear-gradient(135deg, rgba(212,175,55,0.14), rgba(212,175,55,0.03));
-    border-color: rgba(212,175,55,0.45);
+    background: linear-gradient(135deg, rgba(184,134,11,0.14), rgba(184,134,11,0.03));
+    border-color: rgba(184,134,11,0.45);
 }}
 .result-headline {{
     font-family: 'Fraunces', serif;
@@ -177,8 +179,8 @@ h1, h2, h3 {{
 /* ---- Model badge pill ---- */
 .badge {{
     display:inline-block;
-    background: rgba(212,175,55,0.15);
-    border: 1px solid rgba(212,175,55,0.5);
+    background: rgba(184,134,11,0.12);
+    border: 1px solid rgba(184,134,11,0.5);
     color: {PALETTE['gold_bright']};
     border-radius: 999px;
     padding: 2px 10px;
@@ -189,7 +191,7 @@ h1, h2, h3 {{
 
 /* ---- Insight callout ---- */
 .insight-box {{
-    background: rgba(212,175,55,0.06);
+    background: rgba(184,134,11,0.07);
     border-left: 3px solid {PALETTE['gold']};
     border-radius: 6px;
     padding: 0.9rem 1.1rem;
@@ -211,7 +213,7 @@ h1, h2, h3 {{
 }}
 .stButton>button:hover {{
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(212,175,55,0.28);
+    box-shadow: 0 6px 18px rgba(184,134,11,0.28);
     color: #14110a;
 }}
 
@@ -430,7 +432,7 @@ def render_coin_rain(n_coins=26, height=230):
             height: {height}px;
             overflow: hidden;
             border-radius: 14px;
-            background: radial-gradient(circle at 50% 0%, rgba(212,175,55,0.12), rgba(212,175,55,0) 70%);
+            background: radial-gradient(circle at 50% 0%, rgba(184,134,11,0.10), rgba(184,134,11,0) 70%);
         }}
         .coin {{
             position: absolute;
@@ -639,8 +641,8 @@ with tab1:
                 margin=dict(l=10, r=10, t=10, b=10),
                 hovermode="x unified",
             )
-            fig.update_xaxes(gridcolor=PALETTE["panel_border"], showgrid=True)
-            fig.update_yaxes(gridcolor=PALETTE["panel_border"], showgrid=True)
+            fig.update_xaxes(gridcolor=PALETTE["grid"], showgrid=True)
+            fig.update_yaxes(gridcolor=PALETTE["grid"], showgrid=True)
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
             st.subheader("Trading Data")
@@ -790,7 +792,7 @@ with tab3:
     display_comparison = model_comparison.sort_values("RMSE").reset_index(drop=True)
 
     def highlight_best(row):
-        return ["background-color: rgba(212,175,55,0.16)" if row["Model"] == best_model_name else "" for _ in row]
+        return ["background-color: rgba(184,134,11,0.14)" if row["Model"] == best_model_name else "" for _ in row]
 
     st.dataframe(
         display_comparison.style.apply(highlight_best, axis=1).format(
@@ -804,7 +806,7 @@ with tab3:
         with col:
             fig = go.Figure()
             colors = [
-                PALETTE["gold"] if m == best_model_name else "#3E4759"
+                PALETTE["gold"] if m == best_model_name else "#C9BFA5"
                 for m in display_comparison["Model"]
             ]
             fig.add_trace(go.Bar(
@@ -820,8 +822,8 @@ with tab3:
                 margin=dict(l=10, r=10, t=40, b=10),
                 showlegend=False,
             )
-            fig.update_xaxes(tickangle=-25, gridcolor=PALETTE["panel_border"])
-            fig.update_yaxes(gridcolor=PALETTE["panel_border"], zerolinecolor=PALETTE["panel_border"])
+            fig.update_xaxes(tickangle=-25, gridcolor=PALETTE["grid"])
+            fig.update_yaxes(gridcolor=PALETTE["grid"], zerolinecolor=PALETTE["grid"])
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
     st.markdown(
@@ -877,8 +879,8 @@ with tab3:
         margin=dict(l=10, r=10, t=50, b=10),
         showlegend=False,
     )
-    fig2.update_xaxes(gridcolor=PALETTE["panel_border"])
-    fig2.update_yaxes(gridcolor=PALETTE["panel_border"])
+    fig2.update_xaxes(gridcolor=PALETTE["grid"])
+    fig2.update_yaxes(gridcolor=PALETTE["grid"])
     st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
 
     err_table = pd.DataFrame({
