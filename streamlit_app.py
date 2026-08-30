@@ -4,11 +4,17 @@ import numpy as np
 import joblib
 import datetime
 
+
+# =========================================================
+# PAGE CONFIGURATION
+# =========================================================
+
 st.set_page_config(
     page_title="S.Gold Predict",
     page_icon="🪙",
     layout="wide"
 )
+
 
 # =========================================================
 # LOAD MODELS
@@ -29,7 +35,16 @@ def load_models():
         "models/gradient_boosting_pipeline.pkl"
     )
 
-    return lr_model, dt_model, gb_model
+    rf_model = joblib.load(
+        "models/random_forest_pipeline.pkl"
+    )
+
+    return (
+        lr_model,
+        dt_model,
+        gb_model,
+        rf_model
+    )
 
 
 # =========================================================
@@ -48,6 +63,18 @@ def load_data():
     ).reset_index(drop=True)
 
     return df
+
+
+# =========================================================
+# LOAD MODEL COMPARISON
+# =========================================================
+
+@st.cache_data
+def load_model_comparison():
+
+    return pd.read_csv(
+        "data/model_comparison.csv"
+    )
 
 
 # =========================================================
@@ -128,11 +155,18 @@ def create_features(data):
 
 try:
 
-    lr_model, dt_model, gb_model = load_models()
+    (
+        lr_model,
+        dt_model,
+        gb_model,
+        rf_model
+    ) = load_models()
 
     df = load_data()
 
     df_features = create_features(df)
+
+    model_comparison = load_model_comparison()
 
 except Exception as e:
 
@@ -150,6 +184,7 @@ except Exception as e:
 # =========================================================
 
 feature_cols = [
+
     "Price",
     "Open",
     "High",
@@ -169,6 +204,7 @@ feature_cols = [
     "Volatility_7",
     "Lag1_Price",
     "Lag1_Volume"
+
 ]
 
 
@@ -182,7 +218,9 @@ MODEL_MAP = {
 
     "Decision Tree": dt_model,
 
-    "Gradient Boosting": gb_model
+    "Gradient Boosting": gb_model,
+
+    "Random Forest": rf_model
 
 }
 
@@ -203,16 +241,17 @@ st.caption(
 # TABS
 # =========================================================
 
-tab1, tab2 = st.tabs(
+tab1, tab2, tab3 = st.tabs(
     [
         "📈 Trading Chart",
-        "🔮 Price Prediction"
+        "🔮 Price Prediction",
+        "📊 Model Comparison"
     ]
 )
 
 
 # =========================================================
-# TAB 1
+# TAB 1 — TRADING CHART
 # =========================================================
 
 with tab1:
@@ -302,7 +341,7 @@ with tab1:
 
 
 # =========================================================
-# TAB 2
+# TAB 2 — PRICE PREDICTION
 # =========================================================
 
 with tab2:
@@ -316,6 +355,7 @@ with tab2:
         "fill the model features."
     )
 
+
     # -----------------------------------------------------
     # Model selection
     # -----------------------------------------------------
@@ -328,6 +368,7 @@ with tab2:
     model = MODEL_MAP[
         model_choice
     ]
+
 
     # -----------------------------------------------------
     # Valid rows
@@ -343,6 +384,7 @@ with tab2:
         .tolist()
     )
 
+
     # -----------------------------------------------------
     # Date selection
     # -----------------------------------------------------
@@ -357,6 +399,7 @@ with tab2:
         chosen_date
     ].iloc[0]
 
+
     # -----------------------------------------------------
     # Input features
     # -----------------------------------------------------
@@ -369,7 +412,9 @@ with tab2:
 
     cols = st.columns(3)
 
-    for i, feature in enumerate(feature_cols):
+    for i, feature in enumerate(
+        feature_cols
+    ):
 
         with cols[i % 3]:
 
@@ -389,13 +434,16 @@ with tab2:
 
             else:
 
-                user_input[feature] = st.number_input(
-                    feature,
-                    value=float(
-                        selected_row[feature]
-                    ),
-                    format="%.4f"
+                user_input[feature] = (
+                    st.number_input(
+                        feature,
+                        value=float(
+                            selected_row[feature]
+                        ),
+                        format="%.4f"
+                    )
                 )
+
 
     # -----------------------------------------------------
     # Prediction
@@ -417,9 +465,11 @@ with tab2:
 
         try:
 
-            predicted_price = model.predict(
-                input_df
-            )[0]
+            predicted_price = (
+                model.predict(
+                    input_df
+                )[0]
+            )
 
             previous_price = float(
                 selected_row["Price"]
@@ -434,6 +484,7 @@ with tab2:
                 price_change /
                 previous_price
             ) * 100
+
 
             # -------------------------------------------------
             # Results
@@ -468,6 +519,7 @@ with tab2:
                     f"{percentage_change:+.2f}%"
                 )
 
+
             if price_change > 0:
 
                 st.success(
@@ -489,6 +541,7 @@ with tab2:
                     "change in the gold price."
                 )
 
+
         except Exception as e:
 
             st.error(
@@ -496,6 +549,28 @@ with tab2:
             )
 
             st.code(str(e))
+
+
+# =========================================================
+# TAB 3 — MODEL COMPARISON
+# =========================================================
+
+with tab3:
+
+    st.header(
+        "Model Performance Comparison"
+    )
+
+    st.write(
+        "Comparison of the machine learning models "
+        "developed for gold price prediction."
+    )
+
+    st.dataframe(
+        model_comparison,
+        use_container_width=True,
+        hide_index=True
+    )
 
 
 # =========================================================
